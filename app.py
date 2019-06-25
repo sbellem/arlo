@@ -99,6 +99,7 @@ def setup_next_round(election):
     
     last_sample = None
     last_sampled_ballot = None
+    last_audit_board_num = None
     
     for sample_number, (batch_id, ballot_position) in enumerate(sample):
         if last_sample == (batch_id, ballot_position):
@@ -106,6 +107,11 @@ def setup_next_round(election):
             continue
         
         audit_board_num = math.floor(len(audit_boards) * sample_number / len(sample))
+
+        # try to consolidate batches
+        if last_audit_board_num != None and audit_board_num != last_audit_board_num and last_sample[0] == batch_id:
+            audit_board_num = last_audit_board_num
+
         audit_board = audit_boards[audit_board_num]
         sampled_ballot = SampledBallot(
             round_id = round.id,
@@ -118,6 +124,7 @@ def setup_next_round(election):
         # keep track for doubly-sampled ballots
         last_sample = (batch_id, ballot_position)
         last_sampled_ballot = sampled_ballot
+        last_audit_board_num = audit_board_num        
 
         db.session.add(sampled_ballot)
 
