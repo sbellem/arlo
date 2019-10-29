@@ -293,7 +293,17 @@ def audit_status(election_id = None):
                     {
                         "id": audit_board.id,
                         "name": audit_board.name,
-                        "members": []
+                        "members": [],
+                        "ballots": [
+                            {
+                                "position": ballot.ballot_position,
+                                "batch": ballot.batch.name,
+                                "tabulator": ballot.batch.tabulator,
+                                "status": "TODO",
+                                "vote": ""
+                            }
+                            for ballot in audit_board.sampled_ballots
+                        ]
                     }
                     for audit_board in j.audit_boards],
                 "ballotManifest": {

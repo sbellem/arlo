@@ -1,0 +1,52 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "id": "/AuditStatus",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "riskLimit": {
+            "type": "number"
+        },
+        "randomSeed": {
+            "type": "string"
+        },
+        "contests": {
+            "$ref": "#/$defs/contestArray"
+        }
+    },
+    "required": ["name", "riskLimit", "randomSeed"],
+    "$defs": {
+        "contestArray": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/contest" }
+        },
+        "contest": {
+            "id": "/Contest",
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "choices": { "$ref": "#/$defs/choiceArray" },
+                "totalBallotsCast": { "type": "number" },
+                "numWinners": { "type": "integer", "exclusiveMinimum": -1 }
+            },
+            "required": ["id", "name", "choices", "totalBallotsCast"]
+        },
+        "choiceArray": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/choice" }
+        },
+        "choice": {
+            "id": "/Choice",
+            "type": "object",
+            "properties": {
+                "id": { "type": "string" },
+                "name": { "type": "string" },
+                "numVotes": { "type": "integer", "exclusiveMinimum": -1 }
+            },
+            "required": ["id", "name", "numVotes"]
+        }
+    }
+}
