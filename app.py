@@ -645,6 +645,18 @@ def audit_reset(election_id=None):
 def serve(election_id=None):
     return app.send_static_file('index.html')
 
+from flask_graphql import GraphQLView
+from schema import build as build_schema
+import models
+
+app.add_url_rule(
+    '/graphql',
+    view_func=GraphQLView.as_view(
+        'graphql',
+        schema=build_schema(db, models),
+        graphiql=True
+    )
+)
 
 if __name__ == '__main__':
     app.run(use_reloader=True, port=os.environ.get('PORT',3001), host='0.0.0.0', threaded=True)

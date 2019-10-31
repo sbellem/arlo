@@ -18,6 +18,8 @@ numpy = "*"
 psycopg2 = "*"
 pytest = "*"
 uuid = "*"
+graphene-sqlalchemy = "*"
+flask-graphql = "*"
 
 [requires]
 python_version = "3.7"
