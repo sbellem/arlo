@@ -65,8 +65,21 @@ describe('audit flow', () => {
   it('has a happy path', () => {
     $('a=Start Auditing').click()
 <<<<<<< HEAD
+<<<<<<< HEAD
     while (ballotNext('Choice One'))
       $('.bp3-callout*=Round 1: auditing ballot').waitForExist()
+||||||| merged common ancestors
+    while (ballotNext('Yes/For'))
+      $('.bp3-callout*=Round 1: auditing ballot').waitForExist()
+=======
+    ballotNext('Yes/For')
+    for (let i = 0; ballotNext('Yes/For') && i < 20; i++) {
+      $('.bp3-callout*=auditing ballot').waitForExist()
+    }
+    if (ballotNext('Yes/For')) {
+      $('.bp3-button=Return to audit overview').click()
+    }
+>>>>>>> stabilizing tests more
 ||||||| merged common ancestors
     while (ballotNext('Yes/For'))
       $('.bp3-callout*=Round 1: auditing ballot').waitForExist()
@@ -93,10 +106,11 @@ describe('audit flow', () => {
     $('.bp3-callout*=Round 1: auditing ballot 4 of').waitForExist()
 ||||||| merged common ancestors
     ballotNext('Yes/For')
-    $('.bp3-callout*=Round 1: auditing ballot 2 of').waitForExist()
+    $('.bp3-callout*=auditing ballot 2 of').waitForExist()
     ballotNext('No/Against')
-    $('.bp3-callout*=Round 1: auditing ballot 3 of').waitForExist()
+    $('.bp3-callout*=auditing ballot 3 of').waitForExist()
     ballotNext('No audit board consensus')
+<<<<<<< HEAD
     $('.bp3-callout*=Round 1: auditing ballot 4 of').waitForExist()
 =======
     ballotNext('Yes/For')
@@ -104,6 +118,11 @@ describe('audit flow', () => {
     ballotNext('No/Against')
     $('.bp3-callout*=auditing ballot 3 of').waitForExist()
     ballotNext('No audit board consensus')
+    $('.bp3-callout*=auditing ballot 4 of').waitForExist()
+>>>>>>> stabilizing tests more
+||||||| merged common ancestors
+    $('.bp3-callout*=Round 1: auditing ballot 4 of').waitForExist()
+=======
     $('.bp3-callout*=auditing ballot 4 of').waitForExist()
 >>>>>>> stabilizing tests more
     ballotNext('Blank vote/no mark')
