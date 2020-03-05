@@ -2,14 +2,14 @@ import pytest
 import math
 import numpy as np
 
-from sampler import Sampler
+import sampler
+
+seed = '12345678901234567890abcdefghijklmnopqrstuvwxyz😊'
+risk_limit = .1
 
 
 @pytest.fixture
-def bravo_sampler():
-    seed = '12345678901234567890abcdefghijklmnopqrstuvwxyz😊'
-
-    risk_limit = .1
+def bravo_contests():
     contests = {
         'test1': {
             'cand1': 600,
@@ -83,14 +83,11 @@ def bravo_sampler():
         },
     }
 
-    yield Sampler('BRAVO', seed, risk_limit, contests)
+    yield contests
 
 
 @pytest.fixture
-def macro_sampler():
-    seed = '12345678901234567890abcdefghijklmnopqrstuvwxyz😊'
-
-    risk_limit = .1
+def macro_contests():
     contests = {
         'test1': {
             'cand1': 600,
@@ -100,6 +97,11 @@ def macro_sampler():
         },
     }
 
+    yield contests
+
+
+@pytest.fixture
+def macro_batches():
     batches = {}
 
     # 10 batches will have max error of .08
@@ -109,7 +111,7 @@ def macro_sampler():
     for i in range(11, 20):
         batches['pct {}'.format(i)] = {'test1': {'cand1': 20, 'cand2': 30, 'ballots': 50}}
 
-    yield Sampler('MACRO', seed, risk_limit, contests, batches)
+    yield batches
 
 
 def test_macro_error():
@@ -119,7 +121,7 @@ def test_macro_error():
         assert 'Must have batch-level results to use MACRO' in e.value
 
 
-def test_draw_sample(bravo_sampler):
+def test_draw_sample(bravo_contests):
     # Test getting a sample
     manifest = {
         'pct 1': 25,
@@ -128,14 +130,14 @@ def test_draw_sample(bravo_sampler):
         'pct 4': 25,
     }
 
-    sample = bravo_sampler.draw_sample(manifest, 20)
+    sample = sampler.draw_sample(seed, 'BRAVO', bravo_contests, manifest, 20)
 
     for i, item in enumerate(sample):
         expected = expected_sample[i]
         assert item == expected, 'Draw sample failed: got {}, expected {}'.format(item, expected)
 
 
-def test_draw_more_samples(bravo_sampler):
+def test_draw_more_samples(bravo_contests):
     # Test getting a sample
     manifest = {
         'pct 1': 25,
@@ -145,7 +147,7 @@ def test_draw_more_samples(bravo_sampler):
     }
 
     samp_size = 10
-    sample = bravo_sampler.draw_sample(manifest, 10)
+    sample = sampler.draw_sample(seed, 'BRAVO', bravo_contests, manifest, 10)
     assert samp_size == len(sample), 'Received sample of size {}, expected {}'.format(
         samp_size, len(sample))
 
@@ -154,7 +156,7 @@ def test_draw_more_samples(bravo_sampler):
         assert item == expected, 'Draw sample failed: got {}, expected {}'.format(item, expected)
 
     samp_size = 10
-    sample = bravo_sampler.draw_sample(manifest, 10, 10)
+    sample = sampler.draw_sample(seed, 'BRAVO', bravo_contests, manifest, 10, num_sampled=10)
     assert samp_size == len(sample), 'Received sample of size {}, expected {}'.format(
         samp_size, len(sample))
     for i, item in enumerate(sample):
@@ -162,19 +164,23 @@ def test_draw_more_samples(bravo_sampler):
         assert item == expected, 'Draw sample failed: got {}, expected {}'.format(item, expected)
 
 
-def test_draw_macro_sample(macro_sampler):
+def test_draw_macro_sample(macro_contests, macro_batches):
     # Test getting a sample
-    sample = macro_sampler.draw_sample({}, 10)
+    sample = sampler.draw_sample(seed, 'MACRO', macro_contests, {}, 10, batch_results=macro_batches)
 
     for i, item in enumerate(sample):
         expected = expected_macro_sample[i]
         assert item == expected, 'Draw sample failed: got {}, expected {}'.format(item, expected)
 
 
-def test_draw_more_macro_samples(macro_sampler):
+def test_draw_more_macro_sample(macro_contests, macro_batches):
     # Test getting a sample
     samp_size = 5
-    sample = macro_sampler.draw_sample({}, 5)
+    sample = sampler.draw_sample(seed,
+                                 'MACRO',
+                                 macro_contests, {},
+                                 samp_size,
+                                 batch_results=macro_batches)
     assert samp_size == len(sample), 'Received sample of size {}, expected {}'.format(
         samp_size, len(sample))
 
@@ -183,7 +189,12 @@ def test_draw_more_macro_samples(macro_sampler):
         assert item == expected, 'Draw sample failed: got {}, expected {}'.format(item, expected)
 
     samp_size = 5
-    sample = macro_sampler.draw_sample({}, 5, 5)
+    sample = sampler.draw_sample(seed,
+                                 'MACRO',
+                                 macro_contests, {},
+                                 samp_size,
+                                 num_sampled=5,
+                                 batch_results=macro_batches)
     assert samp_size == len(sample), 'Received sample of size {}, expected {}'.format(
         samp_size, len(sample))
     for i, item in enumerate(sample):
@@ -191,6 +202,56 @@ def test_draw_more_macro_samples(macro_sampler):
         assert item == expected, 'Draw sample failed: got {}, expected {}'.format(item, expected)
 
 
+'''
+def test_sampler_compute_risk_macro(macro_sampler):
+
+    sample = {}
+
+    # Draws with taint of 0
+    for i in range(31):
+        sample['Batch {}'.format(i)] = {
+            'Contest A': {
+                'winner': 200,
+                'loser': 180,
+            },
+            'Contest B': {
+                'winner': 200,
+                'loser': 160,
+            },
+            'Contest C': {
+                'winner': 200,
+                'loser': 140,
+            }
+        }
+
+    # draws with taint of 0.04047619
+    for i in range(100, 106):
+        sample['Batch {}'.format(i)] = {
+            'Contest A': {
+                'winner': 190,
+                'loser': 190,
+            },
+            'Contest B': {
+                'winner': 200,
+                'loser': 160,
+            },
+            'Contest C': {
+                'winner': 200,
+                'loser': 140,
+            }
+        }
+
+    computed_p, result = macro_sampler.compute_risk(macro_sampler.contests, macro_sampler.margins, sample)
+
+    expected_p = 0.247688222
+
+    delta = abs(expected_p - computed_p)
+
+    assert delta < 10**-4, 'Incorrect p-value: Got {}, expected {}'.format(computed_p, expected_p)
+
+    assert result, 'Audit did not terminate but should have'
+
+'''
 expected_sample = [('0.000617786', ('pct 2', 3), 1), ('0.002991631', ('pct 3', 24), 1),
                    ('0.017930028', ('pct 4', 19), 1), ('0.025599454', ('pct 3', 15), 1),
                    ('0.045351055', ('pct 1', 7), 1), ('0.063913979', ('pct 1', 8), 1),
