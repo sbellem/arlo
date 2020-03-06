@@ -58,6 +58,7 @@ def compute_margins(contests):
     for contest in contests:
         margins[contest] = {'winners': {}, 'losers': {}}
 
+        print(contests)
         cand_vec = sorted([(cand, contests[contest][cand])
                            for cand in contests[contest] if cand not in ['numWinners', 'ballots']],
                           key=operator.itemgetter(1),

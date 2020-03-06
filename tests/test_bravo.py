@@ -27,7 +27,7 @@ def test_expected_sample_sizes():
 
     margins = sampler.compute_margins(contests)
 
-    computed_asns = bravo.get_expected_sample_sizes(risk_limit, margins, contests,
+    computed_asns = bravo.get_expected_sample_sizes(risk_limit, contests, margins,
                                                     round0_sample_results)
     for contest in true_asns:
         expected = true_asns[contest]
@@ -55,7 +55,7 @@ def test_expected_sample_sizes_second_round():
 
     margins = sampler.compute_margins(contests)
 
-    computed_asns = bravo.get_expected_sample_sizes(risk_limit, margins, contests,
+    computed_asns = bravo.get_expected_sample_sizes(risk_limit, contests, margins,
                                                     round1_sample_results)
     for contest in true_asns:
         expected = true_asns[contest]

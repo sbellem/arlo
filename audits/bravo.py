@@ -6,7 +6,7 @@ import math
 from scipy import stats
 
 
-def get_expected_sample_sizes(risk_limit, margins, contests, sample_results):
+def get_expected_sample_sizes(risk_limit, contests, margins, sample_results):
     """
     Returns the expected sample size for a BRAVO audit of each contest in contests.
 
@@ -274,9 +274,12 @@ def get_sample_sizes(risk_limit, contests, margins, sample_results):
     """
     quants = [.7, .8, .9]
 
+    print('getting bravo sample sizes')
+
     samples = {}
 
-    asns = get_expected_sample_sizes(risk_limit, margins, contests, sample_results)
+    asns = get_expected_sample_sizes(risk_limit, contests, margins, sample_results)
+
     for contest in contests:
         samples[contest] = {}
 

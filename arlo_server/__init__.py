@@ -4,8 +4,8 @@ from enum import Enum, auto
 from flask import Flask, jsonify, request, Response, redirect, session
 from flask_httpauth import HTTPBasicAuth
 
-import sampler
-from audits import *
+import sampler as sampler
+from audits import bravo as bravo
 from werkzeug.exceptions import InternalServerError
 from xkcdpass import xkcd_password as xp
 
@@ -90,10 +90,13 @@ def compute_sample_sizes(round_contest):
     the_round = round_contest.round
     election = the_round.election
 
-    # format the options properly
-    raw_sample_size_options = audits.bravo.get_sample_sizes(
-        election.risk_limit / 100, sampler.compute_margins(election.contests), election.contests,
+    contests = contest_status(election)
+    margins = sampler.compute_margins(contests)
+
+    raw_sample_size_options = bravo.get_sample_sizes(
+        election.risk_limit / 100, contests, margins,
         sample_results(election))[election.contests[0].id]
+
     sample_size_options = []
     sample_size_90 = None
     sample_size_backup = None
@@ -177,7 +180,7 @@ def sample_ballots(election, round):
 
     sample = sampler.draw_sample(election.random_seed,
                                  'BRAVO',
-                                 election.contests,
+                                 contest_status(election),
                                  manifest,
                                  chosen_sample_size,
                                  num_sampled=num_sampled)
@@ -246,9 +249,9 @@ def check_round(election, jurisdiction_id, round_id):
 
     current_sample_results = sample_results(election)
 
-    risk, is_complete = audits.bravo.compute_risk(
+    risk, is_complete = bravo.compute_risk(
         election.risk_limit,
-        sampler.get_margins(electioncontests)[round_contest.contest_id],
+        sampler.compute_margins(contest_status(election))[round_contest.contest_id],
         current_sample_results[round_contest.contest_id])
 
     round.ended_at = datetime.datetime.utcnow()
