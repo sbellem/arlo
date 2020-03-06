@@ -69,7 +69,6 @@ def get_test_statistics(margins, sample_results):
         margins        - the margins for the contest being audited
         sample_results - mapping of candidates to votes in the (cumulative)
                          sample:
-
                 {
                     candidate1: sampled_votes,
                     candidate2: sampled_votes,
@@ -274,12 +273,9 @@ def get_sample_sizes(risk_limit, contests, margins, sample_results):
     """
     quants = [.7, .8, .9]
 
-    print('getting bravo sample sizes')
-
     samples = {}
 
     asns = get_expected_sample_sizes(risk_limit, contests, margins, sample_results)
-
     for contest in contests:
         samples[contest] = {}
 
