@@ -2,9 +2,8 @@ import pytest
 import math
 import numpy as np
 
-from sampler import Sampler
-
-
+import sampler as sampler
+'''
 @pytest.fixture
 def sampler():
     seed = '12345678901234567890abcdefghijklmnopqrstuvwxyz😊'
@@ -179,3 +178,4 @@ def test_compute_risk(sampler):
     assert delta < 10**-4, 'Incorrect p-value: Got {}, expected {}'.format(computed_p, expected_p)
 
     assert result, 'Audit did not terminate but should have'
+'''

@@ -4,7 +4,8 @@ from enum import Enum, auto
 from flask import Flask, jsonify, request, Response, redirect, session
 from flask_httpauth import HTTPBasicAuth
 
-from sampler import Sampler
+import sampler
+from audits import *
 from werkzeug.exceptions import InternalServerError
 from xkcdpass import xkcd_password as xp
 
@@ -85,19 +86,13 @@ def sample_results(election):
     return contests
 
 
-def get_sampler(election):
-    # TODO Change this to audit_type
-    return Sampler('BRAVO', election.random_seed, election.risk_limit / 100,
-                   contest_status(election))
-
-
 def compute_sample_sizes(round_contest):
     the_round = round_contest.round
     election = the_round.election
-    sampler = get_sampler(election)
 
     # format the options properly
-    raw_sample_size_options = sampler.get_sample_sizes(
+    raw_sample_size_options = audits.bravo.get_sample_sizes(
+        election.risk_limit / 100, sampler.compute_margins(election.contests), election.contests,
         sample_results(election))[election.contests[0].id]
     sample_size_options = []
     sample_size_90 = None
@@ -169,7 +164,6 @@ def sample_ballots(election, round):
         num_sampled = 0
 
     chosen_sample_size = round_contest.sample_size
-    sampler = get_sampler(election)
 
     # the sampler needs to have the same inputs given the same manifest
     # so we use the batch name, rather than the batch id
@@ -181,7 +175,12 @@ def sample_ballots(election, round):
         manifest[batch.name] = batch.num_ballots
         batch_id_from_name[batch.name] = batch.id
 
-    sample = sampler.draw_sample(manifest, chosen_sample_size, num_sampled=num_sampled)
+    sample = sampler.draw_sample(election.random_seed,
+                                 'BRAVO',
+                                 election.contests,
+                                 manifest,
+                                 chosen_sample_size,
+                                 num_sampled=num_sampled)
 
     audit_boards = jurisdiction.audit_boards
 
@@ -245,11 +244,12 @@ def check_round(election, jurisdiction_id, round_id):
     # assume one contest
     round_contest = round.round_contests[0]
 
-    sampler = get_sampler(election)
     current_sample_results = sample_results(election)
 
-    risk, is_complete = sampler.compute_risk(round_contest.contest_id,
-                                             current_sample_results[round_contest.contest_id])
+    risk, is_complete = audits.bravo.compute_risk(
+        election.risk_limit,
+        sampler.get_margins(electioncontests)[round_contest.contest_id],
+        current_sample_results[round_contest.contest_id])
 
     round.ended_at = datetime.datetime.utcnow()
     # TODO this is a hack, should we report pairwise p-values?
