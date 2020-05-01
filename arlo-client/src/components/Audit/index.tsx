@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react'
-import { useRouteMatch, useParams, RouteComponentProps } from 'react-router-dom'
+import {
+  Redirect,
+  useRouteMatch,
+  useParams,
+  RouteComponentProps,
+} from 'react-router-dom'
 import EstimateSampleSize from './EstimateSampleSize'
 import SelectBallotsToAudit from './SelectBallotsToAudit'
 import CalculateRiskMeasurement from './CalculateRiskMeasurement'
@@ -18,21 +23,14 @@ interface IParams {
   view: 'setup' | 'progress'
 }
 
-const Audit: React.FC<{}> = () => {
-  const { isAuthenticated } = useContext(AuthDataContext)
-  if (isAuthenticated) {
-    return <MultiJurisdictionAudit />
-  }
-  return <SingleJurisdictionAudit />
-}
-
-const MultiJurisdictionAudit: React.FC = () => {
+export const MultiJurisdictionAudit: React.FC = () => {
   const { meta } = useContext(AuthDataContext)
   switch (meta!.type) {
     case 'audit_admin':
       return <AuditAdminView />
     case 'jurisdiction_admin':
       return <JurisdictionAdminView />
+    /* istanbul ignore next */
     default:
       return <>Error</>
   }
@@ -103,7 +101,7 @@ const initialData: IAudit = {
   isMultiJurisdiction: false,
 }
 
-const SingleJurisdictionAudit: React.FC = () => {
+export const SingleJurisdictionAudit: React.FC = () => {
   const { electionId } = useParams<IParams>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [audit, setAudit] = useState(initialData)
@@ -129,8 +127,11 @@ const SingleJurisdictionAudit: React.FC = () => {
     updateAudit()
   }, [updateAudit])
 
+  if (audit.isMultiJurisdiction) {
+    return <Redirect to="/" />
+  }
+
   const showSelectBallotsToAudit =
-    !audit.isMultiJurisdiction &&
     !!audit.contests.length &&
     audit.rounds[0].contests.every(c => !!c.sampleSizeOptions)
   const showCalculateRiskMeasurement =
@@ -174,5 +175,3 @@ const SingleJurisdictionAudit: React.FC = () => {
     </Wrapper>
   )
 }
-
-export default Audit

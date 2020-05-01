@@ -45,7 +45,7 @@ exports[`App renders properly 1`] = `
         src="/arlo.png"
       />
       <div
-        class="sc-ifAKCX iKQdjg"
+        class="sc-EHOje gNDuQv"
       >
         <label
           for="audit-name"
@@ -53,10 +53,10 @@ exports[`App renders properly 1`] = `
         >
           Give your new audit a unique name.
           <div
-            class="sc-TOsTZ cbVEOu sc-dnqmqq dOkpOn"
+            class="sc-TOsTZ cbVEOu sc-iwsKbI dvOqsv"
           >
             <div
-              class="bp3-input-group sc-iwsKbI hebCva"
+              class="bp3-input-group sc-gZMcBi fkRAtG"
             >
               <input
                 aria-labelledby="audit-name-label"
