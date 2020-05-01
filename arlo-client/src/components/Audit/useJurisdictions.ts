@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
-import { api } from '../../utilities'
-import { IJurisdiction } from '../../../types'
+import { api } from '../utilities'
+import { IJurisdiction } from '../../types'
 
 const useJurisdictions = (electionId: string) => {
   const [jurisdictions, setJurisdictions] = useState<IJurisdiction[]>([])
