@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react'
-import { useRouteMatch, RouteComponentProps } from 'react-router-dom'
+import { useRouteMatch, useParams, RouteComponentProps } from 'react-router-dom'
 import EstimateSampleSize from './EstimateSampleSize'
 import SelectBallotsToAudit from './SelectBallotsToAudit'
 import CalculateRiskMeasurement from './CalculateRiskMeasurement'
@@ -13,6 +13,84 @@ import Setup, { setupStages } from './Setup'
 import useSetupMenuItems from './useSetupMenuItems'
 import BallotManifest from './Setup/BallotManifest'
 
+interface IParams {
+  electionId: string
+  view: 'setup' | 'progress'
+}
+
+const Audit: React.FC<{}> = () => {
+  const { isAuthenticated } = useContext(AuthDataContext)
+  if (isAuthenticated) {
+    return <MultiJurisdictionAudit />
+  }
+  return <SingleJurisdictionAudit />
+}
+
+const MultiJurisdictionAudit: React.FC = () => {
+  const { meta } = useContext(AuthDataContext)
+  switch (meta!.type) {
+    case 'audit_admin':
+      return <AuditAdminView />
+    case 'jurisdiction_admin':
+      return <JurisdictionAdminView />
+    default:
+      return <>Error</>
+  }
+}
+
+const AuditAdminView: React.FC = () => {
+  const { electionId } = useParams<IParams>()
+  const [stage, setStage] = useState<ElementType<typeof setupStages>>(
+    'Participants'
+  )
+  const [menuItems, refresh] = useSetupMenuItems(stage, setStage, electionId)
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  const match: RouteComponentProps<IParams>['match'] | null = useRouteMatch(
+    '/election/:electionId/:view?'
+  )
+  switch (match && match.params.view) {
+    case 'setup':
+      return (
+        <Wrapper>
+          <Sidebar title="Audit Setup" menuItems={menuItems} />
+          <Setup stage={stage} refresh={refresh} menuItems={menuItems} />
+        </Wrapper>
+      )
+    case 'progress':
+      return (
+        <Wrapper>
+          <Sidebar
+            title="Audit Progress"
+            menuItems={[
+              {
+                title: 'Jurisdictions',
+                active: true,
+                state: 'live',
+              },
+            ]}
+          />
+          <p>Progress view</p>
+        </Wrapper>
+      )
+    default:
+      return (
+        <Wrapper>
+          <p>Round management view</p>
+        </Wrapper>
+      )
+  }
+}
+
+const JurisdictionAdminView: React.FC = () => {
+  // TODO
+  // Return different screens based on the result from the rounds endpoint
+  return <BallotManifest />
+}
+
 const initialData: IAudit = {
   name: '',
   frozenAt: null,
@@ -25,24 +103,9 @@ const initialData: IAudit = {
   isMultiJurisdiction: false,
 }
 
-interface IParams {
-  electionId: string
-  view: 'setup' | 'progress'
-}
-
-const Audit: React.FC<{}> = () => {
-  const match: RouteComponentProps<IParams>['match'] | null = useRouteMatch(
-    '/election/:electionId/:view?'
-  )
-  /* istanbul ignore next */
-  const viewMatch = match ? match.params.view : undefined
-  /* istanbul ignore next */
-  const electionId = match ? match.params.electionId : ''
-
-  const { isAuthenticated, meta } = useContext(AuthDataContext)
-
+const SingleJurisdictionAudit: React.FC = () => {
+  const { electionId } = useParams<IParams>()
   const [isLoading, setIsLoading] = useState<boolean>(false)
-
   const [audit, setAudit] = useState(initialData)
 
   const getStatus = useCallback(async (): Promise<IAudit> => {
@@ -73,78 +136,6 @@ const Audit: React.FC<{}> = () => {
   const showCalculateRiskMeasurement =
     !!audit.rounds.length && audit.rounds[0].contests.every(c => !!c.sampleSize)
 
-  const [stage, setStage] = useState<ElementType<typeof setupStages>>(
-    'Participants'
-  )
-
-  const [menuItems, refresh] = useSetupMenuItems(stage, setStage, electionId)
-
-  useEffect(() => {
-    if (
-      isAuthenticated &&
-      viewMatch === 'setup' &&
-      meta!.type === 'audit_admin'
-    )
-      refresh()
-  }, [refresh, isAuthenticated, viewMatch, meta])
-
-  const progressSidebar = (
-    <Sidebar
-      title="Audit Progress"
-      menuItems={[
-        {
-          title: 'Jurisdictions',
-          active: true,
-          state: 'live',
-        },
-      ]}
-    />
-  )
-  const aaSetupSidebar = <Sidebar title="Audit Setup" menuItems={menuItems} />
-  const jaSetupSidebar = (
-    <Sidebar
-      title="Audit Setup"
-      menuItems={[
-        {
-          title: 'Upload Ballot Manifest',
-          active: true,
-          state: 'live',
-        },
-      ]}
-    />
-  )
-
-  if (isAuthenticated)
-    return (
-      <Wrapper>
-        <ResetButton
-          electionId={electionId}
-          disabled={!audit.contests.length || isLoading}
-          updateAudit={updateAudit}
-        />
-        {viewMatch === 'setup' && meta!.type === 'audit_admin' && (
-          <>
-            {aaSetupSidebar}
-            <Setup stage={stage} refresh={refresh} menuItems={menuItems} />
-          </>
-        )}
-        {viewMatch === 'setup' && meta!.type === 'jurisdiction_admin' && (
-          <>
-            {jaSetupSidebar}
-            <BallotManifest />
-          </>
-        )}
-        {viewMatch === 'progress' && (
-          <>
-            {progressSidebar}
-            <p>Progress view</p>
-          </>
-        )}
-        {viewMatch !== 'setup' && viewMatch !== 'progress' && (
-          <p>Round management view</p>
-        )}
-      </Wrapper>
-    )
   return (
     <Wrapper className="single-page">
       <ResetButton
