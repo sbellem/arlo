@@ -9,9 +9,24 @@ const PaddedCell = styled(Cell)`
   padding: 5px 5px 4px 5px;
 `
 
+const useElementWidth = (): [
+  React.RefObject<HTMLDivElement>,
+  number | undefined
+] => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [elementWidth, setElementWidth] = useState<number | undefined>()
+  useLayoutEffect(() => {
+    if (ref.current) {
+      setElementWidth(ref.current.clientWidth)
+    }
+  }, [])
+  return [ref, elementWidth]
+}
+
 const Progress: React.FC = () => {
-  const { electionId } = useParams()
-  const jurisdictions = useJurisdictions(electionId!)
+  const { electionId } = useParams<{ electionId: string }>()
+  const jurisdictions = useJurisdictions(electionId)
+  const [tableContainerRef, tableContainerWidth] = useElementWidth()
 
   const columns = [
     <Column
@@ -76,21 +91,14 @@ const Progress: React.FC = () => {
     />,
   ]
 
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [tableWidth, setTableWidth] = useState<number | undefined>()
-  useLayoutEffect(() => {
-    if (containerRef.current) {
-      setTableWidth(containerRef.current.clientWidth)
-    }
-  }, [])
-  const columnWidths = tableWidth
-    ? Array(columns.length).fill(tableWidth / columns.length)
+  const columnWidths = tableContainerWidth
+    ? Array(columns.length).fill(tableContainerWidth / columns.length)
     : undefined
 
   return (
     <div>
       <H2Title>Audit Progress by Jurisdiction</H2Title>
-      <div ref={containerRef}>
+      <div ref={tableContainerRef}>
         <Table
           numRows={jurisdictions.length}
           defaultRowHeight={30}
