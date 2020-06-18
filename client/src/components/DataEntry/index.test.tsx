@@ -1,10 +1,14 @@
 import React from 'react'
 import { waitFor, fireEvent, screen } from '@testing-library/react'
-import { renderWithRouter } from '../testUtilities'
+import { Route } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { renderWithRouter, mockApi } from '../testUtilities'
 import DataEntry from './index'
-import { dummyBoards, dummyBallots } from './_mocks'
+import { dummyBoards, dummyBallots, doneDummyBallots } from './_mocks'
 import * as utilities from '../utilities'
 import { contestMocks } from '../MultiJurisdictionAudit/_mocks'
+
+window.scrollTo = jest.fn()
 
 const apiMock: jest.SpyInstance<
   ReturnType<typeof utilities.api>,
@@ -33,6 +37,29 @@ const ballotingMock = async (endpoint: string) => {
   }
 }
 
+const renderDataEntry = () =>
+  renderWithRouter(
+    <Route
+      path="/election/:electionId/audit-board/:auditBoardId"
+      component={DataEntry}
+    />,
+    {
+      route: '/election/1/audit-board/audit-board-1',
+    }
+  )
+
+const renderBallot = () =>
+  renderWithRouter(
+    <Route
+      path="/election/:electionId/audit-board/:auditBoardId/batch/:batchId/ballot/:ballotPosition"
+      component={DataEntry}
+    />,
+    {
+      route:
+        '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
+    }
+  )
+
 afterEach(() => {
   apiMock.mockClear()
   checkAndToastMock.mockClear()
@@ -44,7 +71,7 @@ describe('DataEntry', () => {
   })
 
   describe('member form', () => {
-    it.only('renders if no audit board members set', async () => {
+    it('renders if no audit board members set', async () => {
       apiMock.mockImplementation(async endpoint => {
         switch (endpoint) {
           case '/me':
@@ -53,12 +80,10 @@ describe('DataEntry', () => {
             return ballotingMock(endpoint)
         }
       })
+      const { container } = renderDataEntry()
 
-      const { container } = renderWithRouter(<DataEntry />, {
-        route: '/election/1/audit-board/audit-board-1',
-      })
+      await screen.findByText('Audit Board #2: Member Sign-in')
       expect(apiMock).toBeCalledTimes(1)
-      screen.getByText('Audit Board #2: Member Sign-in')
       expect(container).toMatchSnapshot()
     })
 
@@ -75,24 +100,20 @@ describe('DataEntry', () => {
             return ballotingMock(endpoint)
         }
       })
-      const { container } = renderWithRouter(<DataEntry />, {
-        route: '/election/1/audit-board/audit-board-1',
-      })
+      const { container } = renderDataEntry()
 
-      expect(apiMock).toBeCalledTimes(1)
-      const nameInputs = screen.getAllByLabelText('Full Name')
+      const nameInputs = await screen.findAllByLabelText('Full Name')
       expect(nameInputs).toHaveLength(2)
+      expect(apiMock).toBeCalledTimes(1)
 
       nameInputs.forEach((nameInput, i) =>
         fireEvent.change(nameInput, { target: { value: `Name ${i}` } })
       )
       fireEvent.click(screen.getByText('Next'), { bubbles: true })
 
-      await waitFor(() => {
-        expect(apiMock).toBeCalledTimes(1 + 4)
-        screen.getByText('Audit Board #1: Ballot Cards to Audit')
-        expect(container).toMatchSnapshot()
-      })
+      await screen.findByText('Audit Board #1: Ballot Cards to Audit')
+      expect(apiMock).toBeCalledTimes(1 + 4)
+      expect(container).toMatchSnapshot()
     })
   })
 
@@ -106,9 +127,8 @@ describe('DataEntry', () => {
             return ballotingMock(endpoint)
         }
       })
-      const { container } = renderWithRouter(<DataEntry />, {
-        route: '/election/1/audit-board/audit-board-1',
-      })
+      const { container } = renderDataEntry()
+
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         expect(container).toMatchSnapshot()
@@ -116,9 +136,7 @@ describe('DataEntry', () => {
     })
 
     it('renders board table with ballots', async () => {
-      const { container } = renderWithRouter(<DataEntry />, {
-        route: '/election/1/audit-board/audit-board-1',
-      })
+      const { container } = renderDataEntry()
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         screen.getByText('Audit Board #1: Ballot Cards to Audit')
@@ -135,9 +153,7 @@ describe('DataEntry', () => {
         .spyOn(window.document, 'getElementsByClassName')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .mockReturnValue([{ clientWidth: 2000 }] as any)
-      const { container } = renderWithRouter(<DataEntry />, {
-        route: '/election/1/audit-board/audit-board-1',
-      })
+      const { container } = renderDataEntry()
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         expect(container).toMatchSnapshot()
@@ -145,10 +161,7 @@ describe('DataEntry', () => {
     })
 
     it('renders ballot route', async () => {
-      const { container } = renderWithRouter(<DataEntry />, {
-        route:
-          '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
-      })
+      const { container } = renderBallot()
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         screen.getByText('Enter Ballot Information')
@@ -157,14 +170,11 @@ describe('DataEntry', () => {
     })
 
     it('advances ballot forward and backward', async () => {
-      const { history } = renderWithRouter(<DataEntry />, {
-        route:
-          '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
-      })
+      const { history } = renderBallot()
       const pushSpy = jest.spyOn(history, 'push').mockImplementation()
 
       fireEvent.click(
-        screen.getByText('Ballot 2112 not found - move to next ballot'),
+        await screen.findByText('Ballot 2112 not found - move to next ballot'),
         {
           bubbles: true,
         }
@@ -187,12 +197,11 @@ describe('DataEntry', () => {
     })
 
     it('submits ballot', async () => {
-      const { history } = renderWithRouter(<DataEntry />, {
-        route:
-          '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
-      })
+      const { history } = renderBallot()
 
-      fireEvent.click(screen.getByTestId('choice-id-1'), { bubbles: true })
+      fireEvent.click(await screen.findByTestId('choice-id-1'), {
+        bubbles: true,
+      })
       await waitFor(() =>
         fireEvent.click(screen.getByTestId('enabled-review'), { bubbles: true })
       )
@@ -210,10 +219,103 @@ describe('DataEntry', () => {
       })
     })
 
-    it('audits ballots', async () => {
-      renderWithRouter(<DataEntry />, {
-        route: '/election/1/audit-board/audit-board-1',
+    it.only('audits ballots', async () => {
+      const checkMockApi = mockApi([
+        {
+          endpoint: '/me',
+          response: { type: 'AUDIT_BOARD', ...dummyBoards()[0] },
+        },
+        {
+          endpoint:
+            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/contest',
+          response: { contests: contestMocks.oneTargeted },
+        },
+        {
+          endpoint:
+            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots',
+          response: dummyBallots,
+        },
+        {
+          endpoint:
+            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots/ballot-id-2',
+          options: {
+            method: 'PUT',
+            body: JSON.stringify({
+              status: 'AUDITED',
+              interpretations: [
+                {
+                  contestId: 'contest-id-1',
+                  interpretation: 'VOTE',
+                  choiceIds: ['choice-id-1'],
+                  comment: null,
+                },
+                {
+                  contestId: 'contest-id-2',
+                  interpretation: 'CANT_AGREE',
+                  choiceIds: [],
+                  comment: null,
+                },
+              ],
+            }),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+          response: { status: 'ok' },
+        },
+        {
+          endpoint:
+            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots',
+          response: {
+            ballots: [
+              dummyBallots.ballots[0],
+              doneDummyBallots.ballots[1],
+              ...dummyBallots.ballots.slice(2),
+            ],
+          },
+        },
+      ])
+
+      renderDataEntry()
+
+      await screen.findByRole('heading', {
+        name: 'Audit Board #1: Ballot Cards to Audit',
       })
+
+      // Go to the first ballot
+      userEvent.click(screen.getByRole('button', { name: 'Start Auditing' }))
+      screen.getByRole('heading', {
+        name: 'Audit Board #1: Ballot Card Data Entry',
+      })
+      screen.getByText('Auditing ballot 2 of 27')
+
+      // Select some choices for each contest
+      screen.getByRole('heading', { name: 'Contest 1' })
+      userEvent.click(screen.getByRole('checkbox', { name: 'Choice One' }))
+      screen.getByRole('heading', { name: 'Contest 2' })
+      userEvent.click(
+        screen.getAllByRole('checkbox', { name: "Audit board can't agree" })[1]
+      )
+
+      // Review the choices
+      userEvent.click(screen.getByRole('button', { name: 'Review' }))
+      expect(
+        await screen.findByRole('button', { name: 'Choice One' })
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: "Audit board can't agree" })
+      ).toBeDisabled()
+      expect(screen.queryByText('Choice Two')).not.toBeInTheDocument()
+      expect(screen.queryByText('Choice Three')).not.toBeInTheDocument()
+      expect(screen.queryByText('Choice Four')).not.toBeInTheDocument()
+
+      // Submit the ballot
+      userEvent.click(
+        screen.getByRole('button', { name: 'Submit & Next Ballot' })
+      )
+      await screen.findByText('Auditing ballot 3 of 27')
+
+      checkMockApi()
     })
   })
 })
