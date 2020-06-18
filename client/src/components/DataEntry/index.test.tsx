@@ -3,8 +3,9 @@ import { render, waitFor, fireEvent } from '@testing-library/react'
 import { StaticRouter } from 'react-router-dom'
 import { routerTestProps, asyncActRender } from '../testUtilities'
 import DataEntry from './index'
-import { dummyBoards, dummyBallots, contest } from './_mocks'
+import { dummyBoards, dummyBallots } from './_mocks'
 import * as utilities from '../utilities'
+import { contestMocks } from '../MultiJurisdictionAudit/_mocks'
 
 const apiMock: jest.SpyInstance<
   ReturnType<typeof utilities.api>,
@@ -23,7 +24,7 @@ const ballotingMock = async (endpoint: string) => {
         ...dummyBoards()[0],
       }
     case '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/contest':
-      return { contests: [contest] }
+      return { contests: contestMocks.oneTargeted }
     case '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots':
       return dummyBallots
     case '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots/ballot-id-1':
