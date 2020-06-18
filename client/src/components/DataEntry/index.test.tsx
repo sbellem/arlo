@@ -1,7 +1,6 @@
 import React from 'react'
-import { render, waitFor, fireEvent } from '@testing-library/react'
-import { StaticRouter } from 'react-router-dom'
-import { routerTestProps, asyncActRender } from '../testUtilities'
+import { waitFor, fireEvent, screen } from '@testing-library/react'
+import { renderWithRouter } from '../testUtilities'
 import DataEntry from './index'
 import { dummyBoards, dummyBallots } from './_mocks'
 import * as utilities from '../utilities'
@@ -39,23 +38,13 @@ afterEach(() => {
   checkAndToastMock.mockClear()
 })
 
-const routeProps = routerTestProps(
-  '/election/:electionId/audit-board/:auditBoardId',
-  {
-    electionId: '1',
-    auditBoardId: 'audit-board-1',
-  }
-)
-
-const { history: staticHistory, ...staticRouteProps } = routeProps // eslint-disable-line @typescript-eslint/no-unused-vars
-
 describe('DataEntry', () => {
   beforeEach(() => {
     apiMock.mockImplementation(ballotingMock)
   })
 
   describe('member form', () => {
-    it('renders if no audit board members set', async () => {
+    it.only('renders if no audit board members set', async () => {
       apiMock.mockImplementation(async endpoint => {
         switch (endpoint) {
           case '/me':
@@ -65,13 +54,11 @@ describe('DataEntry', () => {
         }
       })
 
-      const { container, getByText } = await asyncActRender(
-        <StaticRouter {...staticRouteProps}>
-          <DataEntry {...routeProps} />
-        </StaticRouter>
-      )
+      const { container } = renderWithRouter(<DataEntry />, {
+        route: '/election/1/audit-board/audit-board-1',
+      })
       expect(apiMock).toBeCalledTimes(1)
-      expect(getByText('Audit Board #2: Member Sign-in')).toBeTruthy()
+      screen.getByText('Audit Board #2: Member Sign-in')
       expect(container).toMatchSnapshot()
     })
 
@@ -88,24 +75,22 @@ describe('DataEntry', () => {
             return ballotingMock(endpoint)
         }
       })
-      const { container, getByText, getAllByLabelText } = await asyncActRender(
-        <StaticRouter {...staticRouteProps}>
-          <DataEntry {...routeProps} />
-        </StaticRouter>
-      )
+      const { container } = renderWithRouter(<DataEntry />, {
+        route: '/election/1/audit-board/audit-board-1',
+      })
 
       expect(apiMock).toBeCalledTimes(1)
-      const nameInputs = getAllByLabelText('Full Name')
+      const nameInputs = screen.getAllByLabelText('Full Name')
       expect(nameInputs).toHaveLength(2)
 
       nameInputs.forEach((nameInput, i) =>
         fireEvent.change(nameInput, { target: { value: `Name ${i}` } })
       )
-      fireEvent.click(getByText('Next'), { bubbles: true })
+      fireEvent.click(screen.getByText('Next'), { bubbles: true })
 
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(1 + 4)
-        expect(getByText('Audit Board #1: Ballot Cards to Audit')).toBeTruthy()
+        screen.getByText('Audit Board #1: Ballot Cards to Audit')
         expect(container).toMatchSnapshot()
       })
     })
@@ -121,11 +106,9 @@ describe('DataEntry', () => {
             return ballotingMock(endpoint)
         }
       })
-      const { container } = await asyncActRender(
-        <StaticRouter {...staticRouteProps}>
-          <DataEntry {...routeProps} />
-        </StaticRouter>
-      )
+      const { container } = renderWithRouter(<DataEntry />, {
+        route: '/election/1/audit-board/audit-board-1',
+      })
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         expect(container).toMatchSnapshot()
@@ -133,17 +116,15 @@ describe('DataEntry', () => {
     })
 
     it('renders board table with ballots', async () => {
-      const { container, getByText } = render(
-        <StaticRouter {...staticRouteProps}>
-          <DataEntry {...routeProps} />
-        </StaticRouter>
-      )
+      const { container } = renderWithRouter(<DataEntry />, {
+        route: '/election/1/audit-board/audit-board-1',
+      })
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
-        expect(getByText('Audit Board #1: Ballot Cards to Audit')).toBeTruthy()
-        expect(getByText('Start Auditing').closest('a')).toBeEnabled()
+        screen.getByText('Audit Board #1: Ballot Cards to Audit')
+        expect(screen.getByText('Start Auditing').closest('a')).toBeEnabled()
         expect(
-          getByText('Auditing Complete - Submit Results').closest('a')
+          screen.getByText('Auditing Complete - Submit Results').closest('a')
         ).toHaveAttribute('disabled') // eslint-disable-line jest-dom/prefer-enabled-disabled
         expect(container).toMatchSnapshot()
       })
@@ -154,11 +135,9 @@ describe('DataEntry', () => {
         .spyOn(window.document, 'getElementsByClassName')
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .mockReturnValue([{ clientWidth: 2000 }] as any)
-      const { container } = render(
-        <StaticRouter {...staticRouteProps}>
-          <DataEntry {...routeProps} />
-        </StaticRouter>
-      )
+      const { container } = renderWithRouter(<DataEntry />, {
+        route: '/election/1/audit-board/audit-board-1',
+      })
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         expect(container).toMatchSnapshot()
@@ -166,52 +145,26 @@ describe('DataEntry', () => {
     })
 
     it('renders ballot route', async () => {
-      const ballotRouteProps = routerTestProps(
-        '/election/:electionId/audit-board/:auditBoardId/batch/:batchId/ballot/:ballotPosition',
-        {
-          electionId: '1',
-          auditBoardId: 'audit-board-1',
-          batchId: 'batch-id-1',
-          ballotPosition: '2112',
-        }
-      )
-      const { history, ...staticBallotRouteProps } = ballotRouteProps // eslint-disable-line @typescript-eslint/no-unused-vars
-      ballotRouteProps.match.url = '/election/1/audit-board/audit-board-1'
-      const { container, getByText } = render(
-        <StaticRouter {...staticBallotRouteProps}>
-          <DataEntry {...ballotRouteProps} />
-        </StaticRouter>
-      )
+      const { container } = renderWithRouter(<DataEntry />, {
+        route:
+          '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
+      })
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
-        expect(getByText('Enter Ballot Information')).toBeTruthy()
+        screen.getByText('Enter Ballot Information')
         expect(container).toMatchSnapshot()
       })
     })
 
     it('advances ballot forward and backward', async () => {
-      const ballotRouteProps = routerTestProps(
-        '/election/:electionId/audit-board/:auditBoardId/batch/:batchId/ballot/:ballotPosition',
-        {
-          electionId: '1',
-          auditBoardId: 'audit-board-1',
-          batchId: 'batch-id-1',
-          ballotPosition: '2112',
-        }
-      )
-      const { history, ...staticBallotRouteProps } = ballotRouteProps // eslint-disable-line @typescript-eslint/no-unused-vars
-      const pushSpy = jest
-        .spyOn(ballotRouteProps.history, 'push')
-        .mockImplementation()
-      ballotRouteProps.match.url = '/election/1/audit-board/audit-board-1'
-      const { getByText } = await asyncActRender(
-        <StaticRouter {...staticBallotRouteProps}>
-          <DataEntry {...ballotRouteProps} />
-        </StaticRouter>
-      )
+      const { history } = renderWithRouter(<DataEntry />, {
+        route:
+          '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
+      })
+      const pushSpy = jest.spyOn(history, 'push').mockImplementation()
 
       fireEvent.click(
-        getByText('Ballot 2112 not found - move to next ballot'),
+        screen.getByText('Ballot 2112 not found - move to next ballot'),
         {
           bubbles: true,
         }
@@ -220,7 +173,7 @@ describe('DataEntry', () => {
         expect(pushSpy).toBeCalledTimes(1)
       })
 
-      fireEvent.click(getByText('Back'), { bubbles: true })
+      fireEvent.click(screen.getByText('Back'), { bubbles: true })
       await waitFor(() => {
         expect(pushSpy).toBeCalledTimes(2)
       })
@@ -234,29 +187,19 @@ describe('DataEntry', () => {
     })
 
     it('submits ballot', async () => {
-      const ballotRouteProps = routerTestProps(
-        '/election/:electionId/audit-board/:auditBoardId/batch/:batchId/ballot/:ballotPosition',
-        {
-          electionId: '1',
-          auditBoardId: 'audit-board-1',
-          batchId: 'batch-id-1',
-          ballotPosition: '2112',
-        }
-      )
-      const { history, ...staticBallotRouteProps } = ballotRouteProps // eslint-disable-line @typescript-eslint/no-unused-vars
-      ballotRouteProps.match.url = '/election/1/audit-board/audit-board-1'
-      const { getByText, getByTestId } = await asyncActRender(
-        <StaticRouter {...staticBallotRouteProps}>
-          <DataEntry {...ballotRouteProps} />
-        </StaticRouter>
-      )
+      const { history } = renderWithRouter(<DataEntry />, {
+        route:
+          '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/2112',
+      })
 
-      fireEvent.click(getByTestId('choice-id-1'), { bubbles: true })
+      fireEvent.click(screen.getByTestId('choice-id-1'), { bubbles: true })
       await waitFor(() =>
-        fireEvent.click(getByTestId('enabled-review'), { bubbles: true })
+        fireEvent.click(screen.getByTestId('enabled-review'), { bubbles: true })
       )
       await waitFor(() => {
-        fireEvent.click(getByText('Submit & Next Ballot'), { bubbles: true })
+        fireEvent.click(screen.getByText('Submit & Next Ballot'), {
+          bubbles: true,
+        })
       })
 
       await waitFor(() => {
@@ -264,6 +207,12 @@ describe('DataEntry', () => {
         expect(history.location.pathname).toBe(
           '/election/1/audit-board/audit-board-1/batch/batch-id-1/ballot/1789'
         )
+      })
+    })
+
+    it('audits ballots', async () => {
+      renderWithRouter(<DataEntry />, {
+        route: '/election/1/audit-board/audit-board-1',
       })
     })
   })

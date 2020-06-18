@@ -1,7 +1,7 @@
 import React from 'react'
 import { RenderResult, act, render } from '@testing-library/react'
-import { createLocation, createMemoryHistory } from 'history'
-import { match as routerMatch } from 'react-router-dom'
+import { createLocation, createMemoryHistory, MemoryHistory } from 'history'
+import { match as routerMatch, Router } from 'react-router-dom'
 
 type MatchParameter<Params> = { [K in keyof Params]?: string }
 
@@ -38,6 +38,27 @@ export const routerTestProps = <Params extends MatchParameter<Params> = {}>(
   const location = createLocation(match.url)
 
   return { history, location, match }
+}
+
+// Copied from https://testing-library.com/docs/example-react-router
+export const renderWithRouter = (
+  ui: React.ReactElement,
+  {
+    route = '/',
+    history = createMemoryHistory({ initialEntries: [route] }),
+  }: { route?: string; history?: MemoryHistory } = {}
+) => {
+  const Wrapper: React.FC = ({ children }: { children?: React.ReactNode }) => (
+    <Router history={history}>{children}</Router>
+  )
+
+  return {
+    ...render(ui, { wrapper: Wrapper }),
+    // Adding `history` to the returned utilities to allow us
+    // to reference it in our tests (just try to avoid using
+    // this to test implementation details).
+    history,
+  }
 }
 
 /** Credit to https://stackoverflow.com/a/56452779 for solution to mocking React Router props */
