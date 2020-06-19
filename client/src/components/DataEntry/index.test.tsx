@@ -60,6 +60,45 @@ const renderBallot = () =>
     }
   )
 
+const apiCalls = {
+  auditBoardMe: {
+    endpoint: '/me',
+    response: { type: 'AUDIT_BOARD', ...dummyBoards()[0] },
+  },
+  contests: {
+    endpoint:
+      '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/contest',
+    response: { contests: contestMocks.oneTargeted },
+  },
+  ballotsInitial: {
+    endpoint:
+      '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots',
+    response: dummyBallots,
+  },
+  auditBallot: (ballotId: string, body: object) => ({
+    endpoint: `/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots/${ballotId}`,
+    options: {
+      method: 'PUT',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+    response: { status: 'ok' },
+  }),
+  ballotsOneAudited: {
+    endpoint:
+      '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots',
+    response: {
+      ballots: [
+        dummyBallots.ballots[0],
+        doneDummyBallots.ballots[1],
+        ...dummyBallots.ballots.slice(2),
+      ],
+    },
+  },
+}
+
 afterEach(() => {
   apiMock.mockClear()
   checkAndToastMock.mockClear()
@@ -140,10 +179,10 @@ describe('DataEntry', () => {
       await waitFor(() => {
         expect(apiMock).toBeCalledTimes(3)
         screen.getByText('Audit Board #1: Ballot Cards to Audit')
-        expect(screen.getByText('Start Auditing').closest('a')).toBeEnabled()
+        expect(screen.getByText('Start Auditing')).toBeEnabled()
         expect(
-          screen.getByText('Auditing Complete - Submit Results').closest('a')
-        ).toHaveAttribute('disabled') // eslint-disable-line jest-dom/prefer-enabled-disabled
+          screen.getByText('Auditing Complete - Submit Results')
+        ).toBeDisabled()
         expect(container).toMatchSnapshot()
       })
     })
@@ -219,61 +258,29 @@ describe('DataEntry', () => {
       })
     })
 
-    it.only('audits ballots', async () => {
+    it('audits ballots', async () => {
       const checkMockApi = mockApi([
-        {
-          endpoint: '/me',
-          response: { type: 'AUDIT_BOARD', ...dummyBoards()[0] },
-        },
-        {
-          endpoint:
-            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/contest',
-          response: { contests: contestMocks.oneTargeted },
-        },
-        {
-          endpoint:
-            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots',
-          response: dummyBallots,
-        },
-        {
-          endpoint:
-            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots/ballot-id-2',
-          options: {
-            method: 'PUT',
-            body: JSON.stringify({
-              status: 'AUDITED',
-              interpretations: [
-                {
-                  contestId: 'contest-id-1',
-                  interpretation: 'VOTE',
-                  choiceIds: ['choice-id-1'],
-                  comment: null,
-                },
-                {
-                  contestId: 'contest-id-2',
-                  interpretation: 'CANT_AGREE',
-                  choiceIds: [],
-                  comment: null,
-                },
-              ],
-            }),
-            headers: {
-              'Content-Type': 'application/json',
+        apiCalls.auditBoardMe,
+        apiCalls.contests,
+        apiCalls.ballotsInitial,
+        apiCalls.auditBallot('ballot-id-2', {
+          status: 'AUDITED',
+          interpretations: [
+            {
+              contestId: 'contest-id-1',
+              interpretation: 'VOTE',
+              choiceIds: ['choice-id-1'],
+              comment: null,
             },
-          },
-          response: { status: 'ok' },
-        },
-        {
-          endpoint:
-            '/election/1/jurisdiction/jurisdiction-1/round/round-1/audit-board/audit-board-1/ballots',
-          response: {
-            ballots: [
-              dummyBallots.ballots[0],
-              doneDummyBallots.ballots[1],
-              ...dummyBallots.ballots.slice(2),
-            ],
-          },
-        },
+            {
+              contestId: 'contest-id-2',
+              interpretation: 'CANT_AGREE',
+              choiceIds: [],
+              comment: null,
+            },
+          ],
+        }),
+        apiCalls.ballotsOneAudited,
       ])
 
       renderDataEntry()
@@ -312,6 +319,48 @@ describe('DataEntry', () => {
       // Submit the ballot
       userEvent.click(
         screen.getByRole('button', { name: 'Submit & Next Ballot' })
+      )
+      await screen.findByText('Auditing ballot 3 of 27')
+
+      checkMockApi()
+    })
+
+    it('deselects choices', async () => {
+      const checkMockApi = mockApi([
+        apiCalls.auditBoardMe,
+        apiCalls.contests,
+        apiCalls.ballotsInitial,
+        apiCalls.auditBallot('ballot-id-2', {
+          status: 'AUDITED',
+          interpretations: [
+            {
+              contestId: 'contest-id-2',
+              interpretation: 'VOTE',
+              choiceIds: ['choice-id-3'],
+              comment: null,
+            },
+          ],
+        }),
+        apiCalls.ballotsOneAudited,
+      ])
+
+      renderDataEntry()
+
+      userEvent.click(
+        await screen.findByRole('button', { name: 'Start Auditing' })
+      )
+
+      // Try selecting and then deselecting some choices
+      // (we had a bug once where this didn't work correctly)
+      userEvent.click(screen.getByRole('checkbox', { name: 'Choice One' }))
+      userEvent.click(screen.getByRole('checkbox', { name: 'Choice One' }))
+
+      userEvent.click(screen.getByRole('checkbox', { name: 'Choice Three' }))
+
+      // Review and submit (with no choice selected for Contest 1)
+      userEvent.click(screen.getByRole('button', { name: 'Review' }))
+      userEvent.click(
+        await screen.findByRole('button', { name: 'Submit & Next Ballot' })
       )
       await screen.findByText('Auditing ballot 3 of 27')
 
