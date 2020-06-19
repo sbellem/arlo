@@ -104,7 +104,7 @@ export const asyncActRender = async (
   component: React.ReactElement
 ): Promise<RenderResult> => {
   let result: RenderResult
-  await act(async () => {
+  await act(() => {
     result = render(component)
   })
   return result!
