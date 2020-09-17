@@ -25,6 +25,15 @@ exports[`AA setup flow renders sidebar when authenticated on /progress 1`] = `
           <p>
             0 of 2 jurisdictions have completed file uploads.
           </p>
+          <span
+            class="bp3-tag sc-jhAzac dwfMXb"
+          >
+            <span
+              class="bp3-text-overflow-ellipsis bp3-fill"
+            >
+              Refreshed just now
+            </span>
+          </span>
         </div>
       </div>
     </div>
@@ -288,19 +297,6 @@ exports[`AA setup flow renders sidebar when authenticated on /progress 1`] = `
         </table>
       </div>
     </div>
-    <div
-      class="sc-jhAzac bTYGht"
-    >
-      <span
-        class="bp3-tag"
-      >
-        <span
-          class="bp3-text-overflow-ellipsis bp3-fill"
-        >
-          Refreshed just now
-        </span>
-      </span>
-    </div>
   </div>
 </div>
 `;
@@ -330,6 +326,15 @@ exports[`AA setup flow renders sidebar when authenticated on /setup 1`] = `
           <p>
             0 of 2 jurisdictions have completed file uploads.
           </p>
+          <span
+            class="bp3-tag sc-jhAzac dwfMXb"
+          >
+            <span
+              class="bp3-text-overflow-ellipsis bp3-fill"
+            >
+              Refreshed just now
+            </span>
+          </span>
         </div>
       </div>
     </div>
@@ -909,19 +914,6 @@ exports[`AA setup flow renders sidebar when authenticated on /setup 1`] = `
         </div>
       </form>
     </div>
-    <div
-      class="sc-jhAzac bTYGht"
-    >
-      <span
-        class="bp3-tag"
-      >
-        <span
-          class="bp3-text-overflow-ellipsis bp3-fill"
-        >
-          Refreshed just now
-        </span>
-      </span>
-    </div>
   </div>
 </div>
 `;
@@ -951,6 +943,15 @@ exports[`AA setup flow renders sidebar when authenticated on /setup 2`] = `
           <p>
             0 of 2 jurisdictions have completed file uploads.
           </p>
+          <span
+            class="bp3-tag sc-jhAzac dwfMXb"
+          >
+            <span
+              class="bp3-text-overflow-ellipsis bp3-fill"
+            >
+              Refreshed just now
+            </span>
+          </span>
         </div>
       </div>
     </div>
@@ -1529,19 +1530,6 @@ exports[`AA setup flow renders sidebar when authenticated on /setup 2`] = `
           </div>
         </div>
       </form>
-    </div>
-    <div
-      class="sc-jhAzac bTYGht"
-    >
-      <span
-        class="bp3-tag"
-      >
-        <span
-          class="bp3-text-overflow-ellipsis bp3-fill"
-        >
-          Refreshed just now
-        </span>
-      </span>
     </div>
   </div>
 </div>
