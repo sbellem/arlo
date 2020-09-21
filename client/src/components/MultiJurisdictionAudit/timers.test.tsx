@@ -3,8 +3,9 @@
  */
 
 import React, { useContext } from 'react'
-import { screen } from '@testing-library/react'
+import { screen, act } from '@testing-library/react'
 import { Route } from 'react-router-dom'
+import FakeTimers from '@sinonjs/fake-timers'
 import { AuditAdminView } from './index'
 import { renderWithRouter, withMockFetch } from '../testUtilities'
 import AuthDataProvider, { AuthDataContext } from '../UserContext'
@@ -47,23 +48,29 @@ const loadEach = [
 ]
 
 describe('timers', () => {
-  const j = (function* idMaker() {
-    let index = 0
-    while (true) yield (index += 30000) // forces it to jump past the check in the first tick
-  })()
-  const dateSpy = jest
-    .spyOn(Date, 'now')
-    .mockImplementation(() => j.next().value)
-
-  afterAll(() => {
-    dateSpy.mockRestore()
+  let clock = FakeTimers.install()
+  beforeEach(() => {
+    clock = FakeTimers.install()
   })
+  afterEach(() => clock.uninstall())
 
   it('refreshes every five minutes on progress', async () => {
     const expectedCalls = [aaApiCalls.getUser, ...loadEach, ...loadEach]
     await withMockFetch(expectedCalls, async () => {
       renderWithRoute()
-      await screen.findByText('Refreshed 59 minutes ago') // the resulting value after the refresh is odd in the test environment
+      await act(async () => {
+        await clock.nextAsync()
+      })
+      screen.getByText('Refreshed just now')
+      await act(async () => {
+        await clock.tickAsync(1000 * 10)
+      })
+      screen.getByText('Refreshed 10 seconds ago')
+      await act(async () => {
+        // Five minutes minus the ten seconds we already ticked
+        await clock.tickAsync(1000 * (60 * 5 - 10))
+      })
+      screen.getByText('Refreshed just now')
     })
   })
 })

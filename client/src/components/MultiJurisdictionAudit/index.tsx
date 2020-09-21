@@ -68,20 +68,24 @@ export const AuditAdminView: React.FC = () => {
 
   const [lastRefreshTime, setLastRefreshTime] = useState(Date.now())
   const [time, setTime] = useState(Date.now())
-  const updateTime = () => setTime(Date.now())
+  // const updateTime = () => setTime(Date.now())
 
-  useEffect(refresh, [refresh]) // call refresh on mount
+  // useEffect(refresh, [refresh]) // call refresh on mount
 
   // poll the apis every 5 minutes
   // TODO figure out how to test timer-related code
   /* istanbul ignore next */
   useInterval(() => {
-    if (time - lastRefreshTime > 1000 * 60 * 5) {
+    const now = Date.now()
+    // console.log(now, lastRefreshTime, now - lastRefreshTime)
+    if (now - lastRefreshTime >= 1000 * 60 * 5) {
+      setLastRefreshTime(now)
       refresh()
-      setLastRefreshTime(time)
     }
-  }, 500)
-  useInterval(updateTime, 500) // have to force rerender on a regular basis so the clocks update regularly
+    setTime(now)
+  }, 1000)
+  // useInterval(updateTime, 500) // have to force rerender on a regular basis so the clocks update regularly
+  // console.log(time, lastRefreshTime, time - lastRefreshTime)
   const refreshStatus = prettifyRefreshStatus(time - lastRefreshTime)
 
   // TODO support multiple contests in batch comparison audits
